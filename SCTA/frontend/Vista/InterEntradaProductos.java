@@ -1,0 +1,557 @@
+package Vista;
+
+import Conexion.Conexión;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import static java.awt.image.ImageObserver.WIDTH;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
+/**
+ * CLASE: InterEntradaProductos FUNCIÓN: Gestionar el reabastecimiento de
+ * inventario. FLUJO: Buscar producto (Izq) -> Definir cantidad/precio ->
+ * Confirmar en lote (Der).
+ */
+public class InterEntradaProductos extends javax.swing.JInternalFrame {
+
+// Modelos de tabla separados para mantener la independencia entre búsqueda y carga
+    private DefaultTableModel modeloNuevosProductos; // Tabla de la derecha (pre-carga)
+    private DefaultTableModel modeloBusqueda;        // Tabla de la izquierda (resultados)
+
+    public InterEntradaProductos() {
+        initComponents();
+        this.setSize(new Dimension(1200, 676));
+        this.setTitle("Entrada de Productos");
+        this.inicializarTablaNuevosProductos();
+        this.configurarTablaBusqueda();
+        this.organizarPorCategorias();
+        this.cargarCategorias();
+
+        //Insertar imagen Wallpaper
+        ImageIcon wallpaper = new ImageIcon("src/imagenes/fondo5.jpg");
+        Icon icono = new ImageIcon(wallpaper.getImage().getScaledInstance(1200, 676, WIDTH));
+        jLabel_wallpaper.setIcon(icono);
+        this.repaint();
+
+        jTable_productos.setSelectionBackground(new Color(51, 153, 255)); // Azul moderno al seleccionar
+        jTable_productos.setSelectionForeground(Color.WHITE);
+        jTable_productos.setRowHeight(30);
+        jTable_productos.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 12));
+        jTable_productos.getTableHeader().setBackground(new Color(32, 136, 203)); // Azul
+        jTable_productos.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 35));
+
+        jTable_nuevosproductos.setSelectionBackground(new Color(51, 153, 255)); // Azul moderno al seleccionar
+        jTable_nuevosproductos.setSelectionForeground(Color.WHITE);
+        jTable_nuevosproductos.setRowHeight(30);
+        jTable_nuevosproductos.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 12));
+        jTable_nuevosproductos.getTableHeader().setBackground(new Color(32, 136, 203)); // Azul
+        jTable_nuevosproductos.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 35));
+
+// --- LÓGICA DE BÚSQUEDA DINÁMICA ---
+        // Se usa un DocumentListener para que la búsqueda sea "en vivo" 
+        // mientras el usuario escribe, sin necesidad de presionar un botón.
+        txt_buscarNombre.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                filtrar();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                filtrar();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                filtrar();
+            }
+
+            private void filtrar() {
+                buscarPorNombre();
+            }
+        });
+
+        // Evento de doble clic para transferir productos entre tablas
+        jTable_productos.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (evt.getClickCount() == 2) {
+                    enviarATablaEntradas();
+                }
+            }
+        });
+
+    }
+
+    private void configurarTablaBusqueda() {
+        modeloBusqueda = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Bloquea la edición directa
+            }
+        };
+
+        // Definimos las columnas
+        modeloBusqueda.addColumn("ID");
+        modeloBusqueda.addColumn("Nombre");
+        modeloBusqueda.addColumn("Categoría");
+        modeloBusqueda.addColumn("Stock Actual");
+        modeloBusqueda.addColumn("Precio Prov.");
+
+        jTable_productos.setModel(modeloBusqueda);
+
+        // Aplicar el renderizador de colores para el stock
+        RenderizadorStock render = new RenderizadorStock();
+        for (int i = 0; i < jTable_productos.getColumnCount(); i++) {
+            jTable_productos.getColumnModel().getColumn(i).setCellRenderer(render);
+        }
+
+        // Ajustar anchos de columna (Opcional pero recomendado)
+        jTable_productos.getColumnModel().getColumn(0).setPreferredWidth(30); // ID más pequeño
+        jTable_productos.getColumnModel().getColumn(1).setPreferredWidth(150); // Nombre más grande
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jPanel2 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTable_nuevosproductos = new javax.swing.JTable();
+        jPanel1 = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTable_productos = new javax.swing.JTable();
+        jComboBox_categorias = new javax.swing.JComboBox<>();
+        txt_buscarNombre = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        btn_eliminar = new javax.swing.JButton();
+        btn_ingresar = new javax.swing.JButton();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel_wallpaper = new javax.swing.JLabel();
+
+        setClosable(true);
+        setIconifiable(true);
+        getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jPanel2.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jTable_nuevosproductos.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane1.setViewportView(jTable_nuevosproductos);
+
+        jPanel2.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 10, 550, 520));
+
+        getContentPane().add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(610, 90, 570, 540));
+
+        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel1.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jTable_productos.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane2.setViewportView(jTable_productos);
+
+        jPanel1.add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 10, 550, 520));
+
+        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 90, 570, 540));
+
+        jComboBox_categorias.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Todos", "Item 2", "Item 3", "Item 4" }));
+        jComboBox_categorias.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jComboBox_categoriasItemStateChanged(evt);
+            }
+        });
+        getContentPane().add(jComboBox_categorias, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 50, 210, -1));
+
+        txt_buscarNombre.setText(" ");
+        txt_buscarNombre.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                txt_buscarNombreKeyTyped(evt);
+            }
+        });
+        getContentPane().add(txt_buscarNombre, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 50, 200, -1));
+
+        jLabel2.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jLabel2.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel2.setText("Categoria:");
+        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 50, -1, -1));
+
+        jLabel4.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        jLabel4.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel4.setText("Nombre:");
+        getContentPane().add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 50, -1, -1));
+
+        jLabel3.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
+        jLabel3.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel3.setText("Productos a Ingresar");
+        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(800, 10, -1, -1));
+
+        btn_eliminar.setBackground(new java.awt.Color(231, 76, 60));
+        btn_eliminar.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        btn_eliminar.setText("Eliminar de la Tabla");
+        btn_eliminar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_eliminarActionPerformed(evt);
+            }
+        });
+        getContentPane().add(btn_eliminar, new org.netbeans.lib.awtextra.AbsoluteConstraints(1040, 50, -1, -1));
+
+        btn_ingresar.setBackground(new java.awt.Color(46, 204, 113));
+        btn_ingresar.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        btn_ingresar.setText("Ingresar Productos");
+        btn_ingresar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_ingresarActionPerformed(evt);
+            }
+        });
+        getContentPane().add(btn_ingresar, new org.netbeans.lib.awtextra.AbsoluteConstraints(860, 50, -1, -1));
+
+        jLabel5.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
+        jLabel5.setForeground(new java.awt.Color(255, 255, 255));
+        jLabel5.setText("Buscador de Productos");
+        getContentPane().add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(190, 10, -1, -1));
+
+        jLabel_wallpaper.setText(" ");
+        getContentPane().add(jLabel_wallpaper, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1190, 650));
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jComboBox_categoriasItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jComboBox_categoriasItemStateChanged
+        // TODO add your handling code here:
+
+        if (evt.getStateChange() == java.awt.event.ItemEvent.SELECTED) {
+            organizarPorCategorias();
+            txt_buscarNombre.setText("");
+        }
+
+    }//GEN-LAST:event_jComboBox_categoriasItemStateChanged
+
+    private void btn_eliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_eliminarActionPerformed
+        // TODO add your handling code here:
+
+        int fila = jTable_nuevosproductos.getSelectedRow();
+        if (fila >= 0) {
+            modeloNuevosProductos.removeRow(fila);
+        } else {
+            JOptionPane.showMessageDialog(this, "Seleccione un producto de la tabla derecha para eliminarlo.");
+        }
+
+
+    }//GEN-LAST:event_btn_eliminarActionPerformed
+
+    /**
+     * ACCIÓN: Ingresar Productos (Botón Verde) LÓGICA: Implementa un PATRÓN
+     * TRANSACCIONAL para asegurar la integridad de la DB.
+     */
+    private void btn_ingresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_ingresarActionPerformed
+        // TODO add your handling code here:
+
+        if (modeloNuevosProductos.getRowCount() == 0) {
+            return;
+        }
+
+        int confirmar = JOptionPane.showConfirmDialog(this, "¿Procesar lista?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (confirmar != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        String sql = "UPDATE producto SET stock_actual = stock_actual + ?, precio_proveedor = ? WHERE id_producto = ?";
+
+        try (Connection cn = Conexión.conectar()) {
+            // DESACTIVAR AUTO-COMMIT: Si un producto falla, no se actualiza ninguno (Atomicidad)
+            cn.setAutoCommit(false);
+
+            try (java.sql.PreparedStatement pst = cn.prepareStatement(sql)) {
+                for (int i = 0; i < modeloNuevosProductos.getRowCount(); i++) {
+                    pst.setInt(1, Integer.parseInt(modeloNuevosProductos.getValueAt(i, 2).toString()));
+                    pst.setDouble(2, Double.parseDouble(modeloNuevosProductos.getValueAt(i, 3).toString()));
+                    pst.setInt(3, Integer.parseInt(modeloNuevosProductos.getValueAt(i, 0).toString()));
+                    pst.addBatch(); // Se acumula en memoria para ejecución rápida
+                }
+
+                pst.executeBatch(); // Envía todas las actualizaciones en un solo viaje a la DB
+                cn.commit();        // Guarda los cambios permanentemente
+
+                JOptionPane.showMessageDialog(this, "¡Inventario actualizado!");
+                modeloNuevosProductos.setRowCount(0); // Limpia la tabla de carga
+                organizarPorCategorias();             // Refresca la tabla de búsqueda
+            } catch (SQLException e) {
+                cn.rollback(); // En caso de error, deshace cualquier cambio previo en esta tanda
+                throw e;
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        }
+
+
+    }//GEN-LAST:event_btn_ingresarActionPerformed
+
+    private void txt_buscarNombreKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txt_buscarNombreKeyTyped
+        // TODO add your handling code here:
+
+        // 1. Obtenemos el carácter presionado
+        char car = evt.getKeyChar();
+
+        // 2. Validamos si NO es letra, NO es dígito, NO es espacio, NO es punto y NO es coma
+        if (!Character.isLetter(car) && !Character.isDigit(car) && car != ' ' && car != '.' && car != ',') {
+
+            // 3. Si no cumple con ninguna de las anteriores, se "consume" el evento
+            evt.consume();
+        }
+
+    }//GEN-LAST:event_txt_buscarNombreKeyTyped
+
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btn_eliminar;
+    private javax.swing.JButton btn_ingresar;
+    private javax.swing.JComboBox<String> jComboBox_categorias;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel_wallpaper;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    public static javax.swing.JTable jTable_nuevosproductos;
+    public static javax.swing.JTable jTable_productos;
+    private javax.swing.JTextField txt_buscarNombre;
+    // End of variables declaration//GEN-END:variables
+
+    private void organizarPorCategorias() {
+
+        if (modeloBusqueda == null) {
+            configurarTablaBusqueda(); // Método para inicializar columnas una sola vez
+        }
+        modeloBusqueda.setRowCount(0);
+
+        String seleccion = jComboBox_categorias.getSelectedItem().toString();
+
+        StringBuilder sql = new StringBuilder(
+                "SELECT p.id_producto, p.nombre, c.descripcion, p.stock_actual, p.precio_proveedor "
+                + "FROM producto p "
+                + "INNER JOIN categoria c ON p.id_categoria = c.id_categoria "
+                + "INNER JOIN proveedor prov ON p.id_proveedor = prov.id_proveedor "
+        );
+
+        if (!seleccion.equals("Todos")) {
+            sql.append(" WHERE c.descripcion = ?");
+        }
+
+        try (Connection cn = Conexión.conectar(); java.sql.PreparedStatement pst = cn.prepareStatement(sql.toString())) {
+
+            if (!seleccion.equals("Todos")) {
+                pst.setString(1, seleccion);
+            }
+
+            try (ResultSet rs = pst.executeQuery()) {
+                while (rs.next()) {
+                    modeloBusqueda.addRow(new Object[]{
+                        rs.getInt(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getDouble(5)
+                    });
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error al filtrar: " + e.getMessage());
+        }
+    }
+
+    private void cargarCategorias() {
+        Connection cn = Conexión.conectar();
+        String sql = "select * from categoria";
+        Statement st;
+
+        try {
+            st = cn.createStatement();
+            ResultSet rs = st.executeQuery(sql);
+            jComboBox_categorias.removeAllItems();
+            jComboBox_categorias.addItem("Todos");
+
+            while (rs.next()) {
+                jComboBox_categorias.addItem(rs.getString("descripcion"));
+            }
+
+            cn.close();
+
+        } catch (SQLException e) {
+        }
+
+    }
+
+    private void inicializarTablaNuevosProductos() {
+        modeloNuevosProductos = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        modeloNuevosProductos.addColumn("ID");
+        modeloNuevosProductos.addColumn("Nombre");
+        modeloNuevosProductos.addColumn("Cant. Ingreso");
+        modeloNuevosProductos.addColumn("Precio Prov. Nuevo");
+        jTable_nuevosproductos.setModel(modeloNuevosProductos);
+    }
+
+    private void buscarPorNombre() {
+        String busqueda = txt_buscarNombre.getText().trim();
+        if (busqueda.isEmpty()) {
+            organizarPorCategorias(); // Si está vacío, vuelve al filtro de categoría
+            return;
+        }
+
+        Connection cn = Conexión.conectar();
+        DefaultTableModel model = (DefaultTableModel) jTable_productos.getModel();
+        model.setRowCount(0); // Limpiamos tabla actual
+
+        String sql = "SELECT p.id_producto, p.nombre, c.descripcion, p.stock_actual, p.precio_proveedor "
+                + "FROM producto p "
+                + "INNER JOIN categoria c ON p.id_categoria = c.id_categoria "
+                + "WHERE p.nombre LIKE ?";
+        try {
+            java.sql.PreparedStatement pst = cn.prepareStatement(sql);
+            pst.setString(1, "%" + busqueda + "%");
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) {
+                Object[] fila = {rs.getInt(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getDouble(5)};
+                model.addRow(fila);
+            }
+            cn.close();
+        } catch (SQLException e) {
+            System.out.println("Error en búsqueda por nombre: " + e);
+        }
+    }
+
+    /**
+     * TRUCO DE UX: enviarATablaEntradas Abre diálogos modales para capturar
+     * datos, pero usa un listener especial para que el cursor aparezca listo
+     * para escribir automáticamente.
+     */
+    private void enviarATablaEntradas() {
+        int fila = jTable_productos.getSelectedRow();
+        if (fila == -1) {
+            return;
+        }
+
+        String id = jTable_productos.getValueAt(fila, 0).toString();
+        String nombre = jTable_productos.getValueAt(fila, 1).toString();
+        double precioActual = Double.parseDouble(jTable_productos.getValueAt(fila, 4).toString());
+
+        // --- 1. CONFIGURACIÓN PARA CANTIDAD ---
+        javax.swing.JTextField txtCant = new javax.swing.JTextField();
+        // Restricción de solo números
+        txtCant.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                char c = evt.getKeyChar();
+                if (!Character.isDigit(c)) {
+                    evt.consume();
+                }
+            }
+        });
+
+        // LLAMADA AL TRUCO DE FOCO (SOLO FOCO, NO SELECCIÓN PORQUE ESTÁ VACÍO)
+        configurarFocoYSeleccion(txtCant, false);
+
+        Object[] mensajeCant = {"Ingrese cantidad para: " + nombre, txtCant};
+        int opcionCant = JOptionPane.showConfirmDialog(this, mensajeCant, "SCTA - Cantidad",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+        if (opcionCant != JOptionPane.OK_OPTION || txtCant.getText().trim().isEmpty()) {
+            return;
+        }
+        int cant = Integer.parseInt(txtCant.getText().trim());
+
+        // --- 2. CONFIGURACIÓN PARA PRECIO ---
+        javax.swing.JTextField txtPrecio = new javax.swing.JTextField(String.valueOf(precioActual));
+        // Restricción de números y un punto
+        txtPrecio.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                char c = evt.getKeyChar();
+                if (!(Character.isDigit(c) || c == '.')) {
+                    evt.consume();
+                }
+                if (c == '.' && txtPrecio.getText().contains(".")) {
+                    evt.consume();
+                }
+            }
+        });
+
+        // LLAMADA AL TRUCO DE FOCO (FOCO Y SELECCIÓN TOTAL)
+        configurarFocoYSeleccion(txtPrecio, true);
+
+        Object[] mensajePrecio = {"Confirme o modifique el Precio de Proveedor:", txtPrecio};
+        int opcionPrecio = JOptionPane.showConfirmDialog(this, mensajePrecio, "SCTA - Precio",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
+
+        if (opcionPrecio != JOptionPane.OK_OPTION || txtPrecio.getText().trim().isEmpty()) {
+            return;
+        }
+        double nuevoPrecio = Double.parseDouble(txtPrecio.getText().trim());
+
+        // --- 3. AGREGAR A LA TABLA ---
+        modeloNuevosProductos.addRow(new Object[]{id, nombre, cant, nuevoPrecio});
+        jTable_productos.clearSelection();
+    }
+
+    /**
+     * MÉTODO AVANZADO: HierarchyListener Soluciona el problema de Java Swing
+     * donde un JTextField dentro de un JOptionPane no toma el foco
+     * inmediatamente. Detecta cuándo el componente es visible en pantalla.
+     */
+    private void configurarFocoYSeleccion(javax.swing.JTextField campo, boolean seleccionarTodo) {
+        campo.addHierarchyListener(new java.awt.event.HierarchyListener() {
+            @Override
+            public void hierarchyChanged(java.awt.event.HierarchyEvent e) {
+                // Si el componente se vuelve visible (se muestra el JOptionPane)
+                if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && campo.isShowing()) {
+
+                    // Usamos invokeLater para asegurar que el JOptionPane ya terminó de dibujarse
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        campo.requestFocusInWindow(); // Solicita el foco
+                        if (seleccionarTodo) {
+                            campo.selectAll(); // Selecciona todo el texto
+                        }
+                    });
+
+                    // Importante: Eliminar el listener para que no se ejecute múltiples veces
+                    campo.removeHierarchyListener(this);
+                }
+            }
+        });
+    }
+
+}
