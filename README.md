@@ -1,5 +1,7 @@
 #SCTA
+
 Sistema de Control de Tiendas de Abarrotes (Suarez Degante Luis Angel - Santoyo Aparicio Leonardo)
+
 Archivos del proyecto SCTA
 
 Este archivo contiene la explicación del codigo de las clases Backend correspondites al modulo de productos
